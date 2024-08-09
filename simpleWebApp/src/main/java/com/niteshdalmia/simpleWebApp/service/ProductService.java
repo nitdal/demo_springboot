@@ -4,25 +4,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 import com.niteshdalmia.simpleWebApp.model.Product;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.niteshdalmia.simpleWebApp.exception.ProductNotFoundException;
+import com.niteshdalmia.simpleWebApp.repository.ProductRepo;
 
 @Service
 public class ProductService {
 
-    List<Product> products = new ArrayList<>(Arrays.asList(
-            new Product(1,"phone",5000),
-            new Product(2,"fan",1500),
-            new Product(3,"battery",150)));
+    @Autowired
+    ProductRepo repo;
+
+//    List<Product> products = new ArrayList<>(Arrays.asList(
+//            new Product(1,"phone",5000),
+//            new Product(2,"fan",1500),
+//            new Product(3,"battery",150)));
 
     public List<Product> getProducts(){
-        return products;
+        return repo.findAll();
     }
 
     public Product getProductById(int prodId) {
-        return products.stream()
-                .filter(p -> p.getProdId() == prodId)
-                .findFirst()
+        return repo.findById(prodId)
                 .orElseThrow(()->new ProductNotFoundException("Product not found with id: " + prodId));
     }
 
@@ -30,28 +33,20 @@ public class ProductService {
         if (prod == null || prod.getProdName() == null || prod.getPrice() <= 0) {
             throw new IllegalArgumentException("Invalid product data");
         }
-        products.add(prod);
+        repo.save(prod);
     }
 
     public void updateProduct(Product prod) {
-        int index = -1;
-        for(int i=0;i<products.size();i++){
-            if(products.get(i).getProdId() == prod.getProdId()){
-                index = i;
-                break;
-            }
-        }
-        if (index == -1) {
-            throw new ProductNotFoundException("Product not found with id: " + prod.getProdId());
-        }
-        products.set(index, prod);
+        Product existingProduct = repo.findById(prod.getProdId())
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + prod.getProdId()));
+
+        repo.save(prod);
     }
 
     public void deleteProductById(int prodId) {
-        Product product = products.stream()
-                .filter(p -> p.getProdId() == prodId)
-                .findFirst()
+        Product existingProduct = repo.findById(prodId)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found with id: " + prodId));
-        products.remove(product);
+
+        repo.deleteById(prodId);
     }
 }
